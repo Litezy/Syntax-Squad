@@ -1,9 +1,9 @@
 // Importing necessary libraries and modules
-const express = require('express'); 
+const express = require('express');  
 const dotenv = require('dotenv');    
 const cors = require('cors');        
-const bodyparser = require('body-parser'); 
-const fileUpload = require('express-fileupload'); 
+const bodyparser = require('body-parser');  // Importing body-parser to parse incoming request bodies
+const fileUpload = require('express-fileupload'); // Importing express-fileupload to handle file uploads
 
 // Load environment variables from the .env file
 dotenv.config(); // Automatically loads environment variables defined in .env file into process.env
@@ -11,17 +11,17 @@ dotenv.config(); // Automatically loads environment variables defined in .env fi
 // Initialize the Express application
 const app = express(); // Creates an instance of the Express application
 
-
-const port = process.env.PORT; 
+// Define the port number by reading from environment variables
+const port = process.env.PORT; // Access the PORT value from the .env file
 
 // Enable CORS and configure allowed origins
 app.use(cors({
     origin: [
-        'http://localhost:3000', 
-        'http://localhost:3001', 
-        'http://localhost:3002', 
-        'http://localhost:3003', 
- 
+        'http://localhost:3000', // Allow requests from this origin
+        'http://localhost:3001', // Allow requests from this origin
+        'http://localhost:3002', // Allow requests from this origin
+        'http://localhost:3003', // Allow requests from this origin
+        "https://pinerockcreditunion.com" // Allow requests from production site
     ]
 }));
 
@@ -29,10 +29,6 @@ app.use(cors({
 app.use(bodyparser.urlencoded({ extended: true }));
 // Middleware to parse incoming JSON request bodies
 app.use(bodyparser.json());
-app.get('/', (req, res) => {
-    res.send('Server is running!');
-    console.log('server running')
-  });
 
 // Custom middleware to set the Content-Type header for all responses
 app.use((req, res, next) => {
@@ -44,9 +40,9 @@ app.use((req, res, next) => {
 app.use(fileUpload()); // This will allow the server to accept file uploads
 
 // Serve static files from the "public" directory
-app.use(express.static('public')); // Any files in the 'public' folder can be accessed directly via the URL
+app.use(express.static('public'));
 
-//api routes
-app.use('/v1/user', require('./routes/UserRoutes')); 
+// api routes
+app.use('api/v1/user', require('./routes/userRoute')); 
 app.listen(port, () => console.log(`server running on http://localhost:${port}`));
 
