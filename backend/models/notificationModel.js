@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
         type:{type: DataTypes.STRING, allowNull:false},
         message:{type: DataTypes.STRING, allowNull:false},
         status:{type: DataTypes.STRING, allowNull:false, defaultValue:'unread'},
-        userid: { type: DataTypes.STRING }
+        userid: { type: DataTypes.INTEGER }
 
     })
 }

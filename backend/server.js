@@ -43,6 +43,6 @@ app.use(fileUpload()); // This will allow the server to accept file uploads
 app.use(express.static('public'));
 
 // api routes
-app.use('api/v1/user', require('./routes/userRoute')); 
+app.use('/api/v1/user', require('./routes/userRoute')); 
 app.listen(port, () => console.log(`server running on http://localhost:${port}`));
 

@@ -1,8 +1,9 @@
-const { getUser } = require('../controllers/userController')
+const { Signup, Testmail } = require('../controllers/userController')
 
  const router = require('express').Router()
 
 
- router.get('/get',getUser)
+ router.post('/signup', Signup)
+ router.post('/testmail', Testmail)
 
  module.exports = router
