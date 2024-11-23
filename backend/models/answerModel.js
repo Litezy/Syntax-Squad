@@ -1,8 +1,8 @@
 module.exports = (sequelize, DataTypes) => {
     return sequelize.define('answer', {
-        type:{type: DataTypes.STRING, allowNull:false},
-        message:{type: DataTypes.STRING, allowNull:false},
+        comment:{type: DataTypes.STRING, allowNull:false},
         userid:{type: DataTypes.INTEGER},
-        status:{type: DataTypes.STRING, allowNull:false, defaultValue:'unread'}
+        questionId:{type: DataTypes.INTEGER},
+        image:{type: DataTypes.STRING, allowNull:'true'},
     })
 }
