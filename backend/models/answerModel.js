@@ -1,8 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
     return sequelize.define('answer', {
-        comment:{type: DataTypes.STRING, allowNull:false},
+        comment:{type: DataTypes.TEXT, allowNull:false},
         userid:{type: DataTypes.INTEGER},
+        slug:{type: DataTypes.STRING, allowNull:true},
         questionId:{type: DataTypes.INTEGER},
-        image:{type: DataTypes.STRING, allowNull:'true'},
+        votecounts:{type: DataTypes.INTEGER,defaultValue:0},
+        image:{type: DataTypes.JSON},
     })
 }

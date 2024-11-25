@@ -257,54 +257,6 @@ exports.ChangeUserPassword = async (req, res) => {
 
 
 
-exports.populateBadges = async (req, res) => {
-    const badges = [
-        { name: 'Curious Starter', desc: 'Posted your first question on Edu Connect', threshold: 1, type: 'question', image: `/badges/curiousbadge.png` },
-
-        {
-            name: 'Inquisitive Learner', desc: 'Posted your 5th questions on Edu Connect', threshold: 5, type: 'question',
-            image: '/badges/inquuisitive.png'
-        },
-
-        {
-            name: 'Proactive Poster', desc: 'Posted your 10th questions on Edu Connect', threshold: 10, type: 'question',
-            image: '/badges/proactive.png'
-        },
-
-        {
-            name: 'Helpful Responder', desc: 'Answered 1 question on Edu Connect', threshold: 1, type: 'answer',
-            image: '/badges/helperbadge.png'
-        },
-
-        {
-            name: 'Dedicated Helper', desc: 'Answered 5 questions on Edu Connect', threshold: 5, type: 'answer',
-            image: '/badges/dedicatedbadge.png'
-        },
-        {
-            name: 'Expert Contributor', desc: 'Answered 10 questions on Edu Connect', threshold: 10, type: 'answer',
-            image: '/badges/expertbadge.png'
-        },
-
-
-        {
-            name: 'Balanced Contributor', desc: 'Posted 15 questions and answered 15 questions on Edu Connect', threshold: 15, type: 'both', image: {
-                male: '/badges/balanc-contibutor-emale.png',
-                female: '/badges/balance-contributor-female.png'
-            }
-        },
-    ];
-
-    try {
-        await BadgeNames.bulkCreate(badges, { ignoreDuplicates: true });
-        return res.json({ status: 200, msg: 'Badges populated successfully' });
-    } catch (error) {
-        ServerError(res, error)
-    }
-};
-
-
-
-
 const assignBadge = async (userid, badgeName) => {
     try {
         const badge = await BadgeNames.findOne({ where: { name: badgeName } });
@@ -352,7 +304,7 @@ const assignBadge = async (userid, badgeName) => {
     }
 };
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve,ms))
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 exports.CreateQuestion = async (req, res) => {
     try {
@@ -415,7 +367,6 @@ exports.CreateQuestion = async (req, res) => {
         if (updatedUser.postcounts === 1) {
             let badgename = 'Curious Starter';
             await assignBadge(updatedUser.id, badgename);
-            console.log('awarded')
         }
 
         if (updatedUser.postcounts === 5) {
@@ -439,6 +390,227 @@ exports.CreateQuestion = async (req, res) => {
     }
 };
 
+
+exports.AnswerAQuestion = async (req, res) => {
+    try {
+        const { comment, id } = req.body
+        if (!comment || !id) return res.json({ status: 400, msg: "Can't post an empty answer" })
+
+        //find the user and the questin ID
+        const findquestion = await Question.findOne({ where: { id } })
+        if (!findquestion) return res.json({ status: 400, msg: 'This post might have been deleted' })
+
+        const findUser = await User.findOne({ where: { id: req.user } })
+        if (!findUser) return res.json({ status: 400, msg: "Unauthorized access" })
+
+
+        const username = findUser.username
+        const images = req.files?.images;
+        let imageNames = [];
+        const slugData = slug(username, '-')
+        const filePath = './public/answers';
+
+        let counter = 1
+        if (images) {
+            const imagesArray = Array.isArray(images) ? images : [images];
+
+            for (const image of imagesArray) {
+                if (image.size >= 10000000) {
+                    return res.json({ status: 400, status: 400, msg: 'Cannot upload images larger than 10MB' });
+                }
+                if (!image.mimetype.startsWith('image/')) {
+                    return res.json({ status: 400, status: 400, msg: 'Invalid image format (jpg, jpeg, png, svg, gif, webp)' });
+                }
+
+                if (!fs.existsSync(filePath)) {
+                    await fs.promises.mkdir(filePath, { recursive: true });
+                }
+                const date = new Date();
+                const timeStamp = date.getTime().toString();
+                const slicedTime = timeStamp.slice(-6);
+                const otp = otpgenerator.generate(5, { specialChars: false, upperCaseAlphabets: false });
+                const imageName = `${slugData}-${slicedTime}-${otp}-${counter}.jpg`;
+                imageNames.push(imageName);
+                counter++;
+
+
+                await image.mv(`${filePath}/${imageName}`);
+            }
+        }
+
+        const newAnswerPost = await Answer.create({
+            comment,
+            slug: slugData,
+            image: imageNames.length > 0 ? JSON.stringify(imageNames) : null,
+            userid: req.user,
+            questionId: id
+        });
+
+        await User.increment('answercounts', { where: { id: req.user } });
+        const updatedUser = await User.findOne({ where: { id: req.user } });
+        await delay(1000);
+        // 
+        if (findquestion.userid !== req.user) {
+            if (updatedUser.answercounts === 1) {
+                let badgename = 'Helpful Responder';
+                await assignBadge(updatedUser.id, badgename);
+            }
+
+            if (updatedUser.answercounts === 5) {
+                let badgename = 'Dedicated Helper';
+                await assignBadge(updatedUser.id, badgename);
+            }
+            if (updatedUser.answercounts === 10) {
+                let badgename = 'Expert Contibutor';
+                await assignBadge(updatedUser.id, badgename);
+            }
+            if (updatedUser.answercounts === 15 && updatedUser.answercounts === 15) {
+                let badgename = 'Balanced Contibutor';
+                await assignBadge(updatedUser.id, badgename);
+            }
+        }
+
+        return res.json({ status: 200, msg: 'Answer created successfully', data: newAnswerPost });
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
+
+exports.UpvoteAnAnswer = async (req, res) => {
+    try {
+        const { id } = req.body
+        //check if their is an answer ID
+        if (!id) return res.json({ status: 400, msg: "ID is missing" })
+        //verify the ID provided 
+        const answer = await Answer.findOne({ where: { id } })
+        if (!answer) return res.json({ status: 400, msg: 'Answer to upvote not found' })
+
+        //find the question the answer is attached to
+        const findQuestion = await Question.findOne({ where: { id: answer.questionId } })
+        if (!findQuestion) return res.json({ status: 400, msg: 'Question post not found' })
+
+        //find User with the answer to the post so we can exclude them giving an upvote to their answer.
+        const UserwithAnswerPost = await User.findOne({ where: { id: answer.userid } })
+
+        let newCount;
+        if (UserwithAnswerPost.id !== req.user) {
+            //increment the upvotecounts and create a new votecount to get total voters and users who voted.
+            await Answer.increment('votecounts', { where: { id } })
+            newCount = await Vote.create({
+                userid: req.user,
+                questionId: findQuestion.id,
+                answerid: id
+
+            })
+        }
+        return res.json({ status: 200, msg: 'Answer upvoted successfully', data: answer.userid === req.user ? "You can't upvote your own answer" : newCount })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
+
+exports.fetchAllUpvoteCountUsers = async (req, res) => {
+    try {
+        const findvoters = await Vote.findAll({
+            include: [
+                {
+                    model: User, as: 'uservotes',
+                    attributes: { exclude: Excludes }
+                }
+            ]
+        })
+        if (!findvoters) return res.json({ status: 400, msg: 'No voters found' })
+        return res.json({ status: 200, msg: 'fetch success', data: findvoters })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
+exports.fetchAllQuestions = async (req, res) => {
+    try {
+        const questions = await Question.findAll({
+            include: [
+                {
+                    model: User, as: 'userquestions',
+                    attributes: { exclude: Excludes },
+
+                },
+                {
+                    model: Answer, as: 'userans',
+                    include: [
+                        {
+                            model: User, as: 'useranswers',
+                            attributes: { exclude: Excludes },
+                        },
+                        {
+                            model: Vote, as: "answer_votes",
+                            include: [
+                                {
+                                    model: User, as: 'uservotes'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            order: [['createdAt', 'DESC']],
+        });
+        if (questions.length === 0) return res.json({ status: 400, msg: 'No posts made on Edu Connect' })
+        return res.json({ status: 200, msg: "fetch success", data: questions })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
+exports.getSingleQuestionPost = async (req, res) => {
+    try {
+        const { id } = req.params
+        if (!id) return res.json({ status: 400, msg: 'ID Is missing' })
+        const question = await Question.findOne({
+            where: { id },
+            include: [
+                {
+                    model: Answer, as: 'userans',
+                    include: [
+                        {
+                            model: User, as: 'useranswers',
+                            attributes: { exclude: Excludes },
+                        },
+                        {
+                            model: Vote, as: "answer_votes",
+                            include: [
+                                {
+                                    model: User, as: 'uservotes'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        })
+        if (!question) return res.json({ status: 400, msg: 'This post might have been deleted' })
+        return res.json({ status: 200, msg: 'fetch success', data: question })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
+
+exports.getSingleUser = async (req, res) => {
+    try {
+        const { id } = req.params
+        if (!id) return res.json({ status: 400, msg: 'User ID Is missing' })
+        const user = await User.findOne({ where: { id },
+        attributes:{ exclude : Excludes}
+        })
+        if (!user) return res.json({ status: 400, msg: "User not found" })
+        return res.json({ status: 200, msg: 'fetch success.', data: user })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
 exports.getAllUsersQuestions = async (req, res) => {
     try {
         const questions = await Question.findAll({ where: { userid: req.user } })
@@ -446,7 +618,21 @@ exports.getAllUsersQuestions = async (req, res) => {
             status: 404, msg: "No posts found",
             include: [
                 {
-                    model: Answer, as: "userans"
+                    model: Answer, as: 'userans',
+                    include: [
+                        {
+                            model: User, as: 'useranswers',
+                            attributes: { exclude: Excludes },
+                        },
+                        {
+                            model: Vote, as: "answer_votes",
+                            include: [
+                                {
+                                    model: User, as: 'uservotes'
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         })

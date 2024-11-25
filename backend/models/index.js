@@ -25,14 +25,15 @@ db.questions = require(`./questionModel`)(sequelize, DataTypes)
 db.answers = require(`./answerModel`)(sequelize, DataTypes)
 db.votes = require(`./voteModel`)(sequelize, DataTypes)
 db.badges = require(`./badgeModel`)(sequelize, DataTypes)
-db.badgenames = require(`./BadgeNames`)(sequelize, DataTypes)
+db.badgenames =  require('./BadgeNames')(sequelize, DataTypes);
+
 
 
 //One to Many relationships
 db.users.hasMany(db.questions, { foreignKey: "userid", as: 'userquestions' });
 db.users.hasMany(db.answers, { foreignKey: "userid", as: 'useranswers' });
 db.questions.hasMany(db.answers, { foreignKey: "questionId", as: 'userans' });
-db.users.hasOne(db.votes, { foreignKey: "userid", as: 'uservote' });
+db.users.hasOne(db.votes, { foreignKey: "userid", as: 'uservotes' });
 db.answers.hasMany(db.votes, { foreignKey: "answerid", as: 'answer_votes' });
 db.users.hasMany(db.notifications, { foreignKey: 'userid', as: 'usernotify' })
 db.users.hasMany(db.badges, { foreignKey: 'userid', as: 'user_badges' })
@@ -43,7 +44,7 @@ db.users.hasMany(db.badges, { foreignKey: 'userid', as: 'user_badges' })
 db.questions.belongsTo(db.users, { foreignKey: 'userid', as: "userquestions" });
 db.answers.belongsTo(db.users, { foreignKey: 'userid', as: "useranswers" });
 db.answers.belongsTo(db.questions, { foreignKey: 'questionId', as: "userans" });
-db.votes.belongsTo(db.users, { foreignKey: 'userid', as: "uservote" });
+db.votes.belongsTo(db.users, { foreignKey: 'userid', as: "uservotes" });
 db.votes.belongsTo(db.answers, { foreignKey: 'answerid', as: "answer_votes" });
 db.notifications.belongsTo(db.users, { foreignKey: 'userid', as: 'usernotify' })
 db.badges.belongsTo(db.users, { foreignKey: 'userid', as: 'user_badges' })
