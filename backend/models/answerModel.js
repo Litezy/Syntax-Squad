@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
         slug:{type: DataTypes.STRING, allowNull:true},
         questionId:{type: DataTypes.INTEGER},
         votecounts:{type: DataTypes.INTEGER,defaultValue:0},
+        edited: {type: DataTypes.STRING, defaultValue:'false'},
         image:{type: DataTypes.JSON},
     })
 }

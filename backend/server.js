@@ -17,11 +17,9 @@ const port = process.env.PORT; // Access the PORT value from the .env file
 // Enable CORS and configure allowed origins
 app.use(cors({
     origin: [
-        'http://localhost:3000', // Allow requests from this origin
-        'http://localhost:3001', // Allow requests from this origin
-        'http://localhost:3002', // Allow requests from this origin
-        'http://localhost:3003', // Allow requests from this origin
-        "https://pinerockcreditunion.com" // Allow requests from production site
+        'http://localhost:5173/', // Allow requests from this origin
+        'http://localhost:5174/', // Allow requests from this origin
+        'http://localhost:5175/', // Allow requests from this origin
     ]
 }));
 

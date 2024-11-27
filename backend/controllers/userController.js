@@ -13,6 +13,7 @@ const fs = require('fs')
 const path = require('path');
 const Badge = require('../models').badges
 const BadgeNames = require('../models').badgenames
+const Newsletter = require('../models').newsletters
 
 
 
@@ -75,6 +76,31 @@ exports.Signup = async (req, res) => {
 }
 
 
+exports.UpdateProfile = async (req, res) => {
+    try {
+        const { firstname, lastname, email, username, } = req.body
+        if (!email) return res.json({ status: 400, msg: 'Email is required' })
+        const finduser = await User.findOne({ where: { email } })
+        if (!finduser) return res.json({ status: 404, msg: 'User not found' })
+        if (username) {
+            const findUsername = await User.findOne({ where: { username } })
+            if (findUsername && findUsername.id !== req.user) return res.json({ status: 409, msg: 'Username already exists, try another' })
+        }
+        const user = await User.update({
+            firstname: firstname ? firstname : finduser.firstname,
+            lastname: lastname ? lastname : finduser.lastname,
+            username: username ? username : finduser.username
+        }, {
+            where: {
+                email
+            }
+        })
+        return res.json({ status: 200, msg: 'Profile updated succesfully', data: user })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
 
 exports.LoginAcc = async (req, res) => {
     try {
@@ -98,7 +124,7 @@ exports.GetUserProfile = async (req, res) => {
             where: { id: req.user },
             attributes: { exclude: Excludes }
         })
-        if (!user) return res.json({ status: 400, msg: 'Incomplete request' })
+        if (!user) return res.json({ status: 404, msg: 'User not found request' })
         return res.json({ status: 200, msg: 'Profile fetched successfully', data: user })
     } catch (error) {
         return res.json({ status: 500, msg: error.message })
@@ -189,7 +215,46 @@ exports.VerifyEmail = async (req, res) => {
     }
 }
 
+exports.resendOtpForEmailVerification = async (req, res) => {
+    try {
+        const { email } = req.body
+        if (!email) return res.json({ status: 400, msg: 'User email is missing' })
+        const FindEmail = await User.findOne({ where: { email } })
+        if (FindEmail.verified === 'true') return res.json({ status: 400, msg: 'Account already verified' })
+        if (!FindEmail) return res.json({ status: 404, msg: 'Account not found' })
+        const otp = otpgenerator.generate(6, { specialChars: false, lowerCaseAlphabets: false, upperCaseAlphabets: false })
+        FindEmail.code = otp
+        await FindEmail.save()
+        await SendMail({
+            code: otp,
+            mailTo: email,
+            subject: 'Account Verification Code',
+            username: FindEmail.firstname,
+            fullname: `${FindEmail.firstname} ${FindEmail.lastname}`,
+            message: 'Copy and paste your account verification code below',
+            template: 'verification',
+            email: email,
+            date: moment().format('DD MMMM YYYY hh:mm A')
+        })
+        return res.json({ status: 200, msg: 'Otp sent successfully' })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
 
+//Non Auth Password Change
+
+exports.findAccount = async (req, res) => {
+    try {
+        const { email } = req.body
+        if (!email) return res.json({ status: 400, msg: 'Email is missing' })
+        const findemail = await User.findOne({ where: { email } })
+        if (!findemail) return res.json({ status: 400, msg: 'Email not found' })
+        return res.json({ status: 200, msg: 'Account fetched successfully' })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
 exports.sendOtpForPasswordChange = async (req, res) => {
     try {
         const { email } = req.body
@@ -199,14 +264,55 @@ exports.sendOtpForPasswordChange = async (req, res) => {
         const otp = otpgenerator.generate(6, { specialChars: false, lowerCaseAlphabets: false, upperCaseAlphabets: false })
         FindEmail.code = otp
         await FindEmail.save()
-        return res.json({ status: 200, msg: 'Otp sent successfully', data: otp })
+        await SendMail({
+            code: otp,
+            mailTo: email,
+            subject: 'Account Verification For Change Of Password',
+            username: FindEmail.firstname,
+            fullname: `${FindEmail.firstname} ${FindEmail.lastname}`,
+            message: 'Copy and paste your account verification code below',
+            template: 'verification',
+            email: email,
+            date: moment().format('DD MMMM YYYY hh:mm A')
+        })
+        return res.json({ status: 200, msg: 'Otp sent successfully' })
     } catch (error) {
         ServerError(res, error)
     }
 }
 
-exports.VerifyPasswordChange = async (req, res) => {
+exports.resendOTP = async (req, res) => {
+    try {
+        const { email } = req.body
+        if (!email) return res.json({ status: 400, msg: 'Email is missing' })
+        const findemail = await User.findOne({ where: { email } })
+        if (!findemail) return res.json({ status: 400, msg: 'Email not found' })
+        if (findemail.verified === 'true') return res.json({ status: 400, msg: 'Email already verified' })
+        const otp = otpgenerator.generate(6, { specialChars: false, lowerCaseAlphabets: false, upperCaseAlphabets: false })
+        findemail.code = otp
+        await findemail.save()
+        await SendMail({
+            code: otp,
+            mailTo: email,
+            subject: 'OTP For Change Of Password',
+            username: findemail.firstname,
+            fullname: `${findemail.firstname} ${findemail.lastname}`,
+            message: 'Copy and paste your account verification code below',
+            template: 'verification',
+            email: email,
+            date: moment().format('DD MMMM YYYY hh:mm A')
+        })
+        return res.json({ status: 200, msg: 'Otp sent successfully' })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
 
+
+
+//Auth Password change
+
+exports.VerifyPasswordChange = async (req, res) => {
     try {
         const { code, email } = req.body
         if (!code || !email) return res.json({ status: 404, msg: 'Incomplete Request' })
@@ -217,11 +323,12 @@ exports.VerifyPasswordChange = async (req, res) => {
         FindEmail.verified = 'true'
         await FindEmail.save()
         return res.json({ status: 200, msg: 'Code verified successfully' })
-
     } catch (error) {
         return res.json({ status: 500, msg: error.message })
     }
 }
+
+
 
 exports.ChangeUserPassword = async (req, res) => {
     try {
@@ -247,7 +354,14 @@ exports.ChangeUserPassword = async (req, res) => {
             status: 'unread',
             userid: finduser.id
         })
-        await SendMail({ mailTo: finduser.email, subject: 'Password Verification Successfull', username: finduser.firstname, message: 'Your request to change your account password was successful, login to your account with the new password', template: 'emailpass', date: moment().format('DD MMMM YYYY hh:mm A') })
+        await SendMail({
+            mailTo: finduser.email,
+            subject: 'Password Change Successfull',
+            username: finduser.firstname,
+            message: 'Your request to change your account password was successful, login to your account with the new password',
+            template: 'emailpass',
+            date: moment().format('DD MMMM YYYY hh:mm A')
+        })
         return res.json({ status: 200, msg: "Password changed succesfully, login account" })
     } catch (error) {
         return res.json({ status: 404, msg: error })
@@ -257,6 +371,8 @@ exports.ChangeUserPassword = async (req, res) => {
 
 
 
+
+//badge function to award user a badge once they get upto a threshhold
 const assignBadge = async (userid, badgeName) => {
     try {
         const badge = await BadgeNames.findOne({ where: { name: badgeName } });
@@ -391,10 +507,28 @@ exports.CreateQuestion = async (req, res) => {
 };
 
 
+exports.updateQuestion = async (req, res) => {
+    try {
+        const { category, content, id } = req.body;
+        if (!id) return res.json({ status: 400, msg: 'Question ID is missing' })
+        const question = await Question.findOne({ where: { id } });
+        if (!question) return res.json({ status: 404, msg: 'Question not found' })
+        if (!category && !content) return res.json({ status: 400, msg: "Both fields can't be empty" })
+        if (category) question.category = category;
+        if (content) question.content = content;
+        question.edited = 'true'
+        await question.save()
+        return res.json({ status: 200, msg: 'Question updated successfully', data: question })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
 exports.AnswerAQuestion = async (req, res) => {
     try {
         const { comment, id } = req.body
-        if (!comment || !id) return res.json({ status: 400, msg: "Can't post an empty answer" })
+        if (!id) return res.json({ status: 400, msg: 'Question ID is missing' })
+        if (!comment) return res.json({ status: 400, msg: "Can't post an empty answer" })
 
         //find the user and the questin ID
         const findquestion = await Question.findOne({ where: { id } })
@@ -475,6 +609,50 @@ exports.AnswerAQuestion = async (req, res) => {
         ServerError(res, error)
     }
 }
+
+exports.updateAnswer = async (req, res) => {
+    try {
+        const { comment, id } = req.body;
+        if (!id) return res.json({ status: 400, msg: 'Answer ID is missing' })
+        const answer = await Answer.findOne({ where: { id } });
+        if (!answer) return res.json({ status: 404, msg: 'Answer might have been deleted' })
+        if (comment) answer.comment = comment;
+        answer.edited = 'true'
+        await answer.save()
+        return res.json({ status: 200, msg: 'Answer updated successfully', data: answer })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+exports.deleteAnswer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) return res.json({ status: 400, msg: 'Answer ID is missing' })
+        const answer = await Answer.findOne({ where: { id } });
+        if (!answer) return res.json({ status: 404, msg: 'Answer might have been deleted' })
+        const findUser = await User.findOne({ where: { id: answer.userid } })
+        if (findUser.id !== req.user) return res.json({ status: 400, msg: "Unauthorized access to delete post" })
+        await answer.destroy()
+        return res.json({ status: 200, msg: 'Answer deleted successfully', data: answer })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+exports.deleteQuestion = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) return res.json({ status: 400, msg: 'Question ID is missing' })
+        const question = await Question.findOne({ where: { id } });
+        if (!question) return res.json({ status: 404, msg: 'Question post not found' })
+        const findUser = await User.findOne({ where: { id: question.userid } })
+        if (findUser.id !== req.user) return res.json({ status: 400, msg: "Unauthorized access to delete post" })
+        await question.destroy()
+        return res.json({ status: 200, msg: 'Question deleted successfully', data: question })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
 
 
 exports.UpvoteAnAnswer = async (req, res) => {
@@ -588,7 +766,8 @@ exports.getSingleQuestionPost = async (req, res) => {
                         }
                     ]
                 }
-            ]
+            ],
+            order: [['createdAt', 'DESC']],
         })
         if (!question) return res.json({ status: 400, msg: 'This post might have been deleted' })
         return res.json({ status: 200, msg: 'fetch success', data: question })
@@ -602,8 +781,9 @@ exports.getSingleUser = async (req, res) => {
     try {
         const { id } = req.params
         if (!id) return res.json({ status: 400, msg: 'User ID Is missing' })
-        const user = await User.findOne({ where: { id },
-        attributes:{ exclude : Excludes}
+        const user = await User.findOne({
+            where: { id },
+            attributes: { exclude: Excludes }
         })
         if (!user) return res.json({ status: 400, msg: "User not found" })
         return res.json({ status: 200, msg: 'fetch success.', data: user })
@@ -634,7 +814,8 @@ exports.getAllUsersQuestions = async (req, res) => {
                         }
                     ]
                 }
-            ]
+            ],
+            order: [['createdAt', 'DESC']],
         })
 
         return res.json({ status: 200, msg: "fetch success", data: questions })
@@ -644,6 +825,45 @@ exports.getAllUsersQuestions = async (req, res) => {
 }
 
 
+exports.getASingleAnswer = async (req, res) => {
+    try {
+        const { id } = req.body
+        if (!id) return res.json({ status: 400, msg: 'Answer ID is required' })
+        const answer = await Answer.findOne({
+            where: { id },
+            include: [
+                {
+                    model: User, as: 'useranswers',
+                    attributes: { exclude: Excludes },
+                },
+                {
+                    model: Vote, as: "answer_votes",
+                    include: [
+                        {
+                            model: User, as: 'uservotes'
+                        }
+                    ]
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        })
+        if (!answer) return res.json({ status: 404, msg: 'This answer might have been deleted' })
+        return res.json({ status: 200, msg: 'fetch success', data: answer })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
+exports.emailSub = async (req, res) => {
+    try {
+        const { email } = req.body
+        if (!email) return res.json({ status: 400, msg: 'Email is required' })
+        const user = await Newsletter.create({ email })
+        return res.json({ status: 200, msg: 'Newsletter sign up success', data: user })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
 
 
 
