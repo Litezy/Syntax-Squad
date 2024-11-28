@@ -1,0 +1,36 @@
+.authentication-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.authentication-heading{
+    font-weight: 600;
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+.email-message{
+    color: var(--primary-color);
+
+}
+
+.code-heading{
+
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--primary-color);
+    
+
+}
+
+.verification-button{
+    height: 59px;
+    width: 500px;
+    background-color: var(--primary-color);
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    margin-top: 30px;
+}
