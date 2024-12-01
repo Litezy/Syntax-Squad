@@ -1,5 +1,5 @@
 const { userMiddleware } = require('../auth/UserAuth')
-const { Signup, Testmail, LoginAcc, GetUserProfile, logOutUser, VerifyEmail, ChangeProfileImage, ChangeUserPassword, VerifyPasswordChange, sendOtpForPasswordChange, CreateQuestion, getAllUsersQuestions, populateBadges, assignBadge, AnswerAQuestion, fetchAllQuestions, UpvoteAnAnswer, fetchAllUpvoteCountUsers, getSingleQuestionPost, getSingleUser, resendOTP, resendOtpForEmailVerification, findAccount, UpdateProfile, emailSub, getASingleAnswer, updateQuestion, updateAnswer, deleteAnswer, deleteQuestion } = require('../controllers/userController')
+const { Signup, Testmail, LoginAcc, GetUserProfile, logOutUser, VerifyEmail, ChangeProfileImage, ChangeUserPassword, VerifyPasswordChange, sendOtpForPasswordChange, CreateQuestion, getAllUsersQuestions, populateBadges, assignBadge, AnswerAQuestion, fetchAllQuestions, UpvoteAnAnswer, fetchAllUpvoteCountUsers, getSingleQuestionPost, getSingleUser, resendOTP, resendOtpForEmailVerification, findAccount, UpdateProfile, emailSub, getASingleAnswer, updateQuestion, updateAnswer, deleteAnswer, deleteQuestion, getAllTypesOfNotifications } = require('../controllers/userController')
 
 const router = require('express').Router()
 
@@ -11,11 +11,12 @@ router.post('/email_verify', VerifyEmail) //working
 router.post('/resend_otp_for_email_verify', resendOtpForEmailVerification) //working
 
 //forgot password
-router.post(`/find_account`, findAccount)
+router.get(`/find_account/:email`, findAccount)
 router.post('/otp_for_password', sendOtpForPasswordChange)
 router.post('/change_password', ChangeUserPassword) //working
 
 router.post('/email_sub', emailSub) //working
+router.get('/get_notice', getAllTypesOfNotifications) //working
 
 
 //Auth routes

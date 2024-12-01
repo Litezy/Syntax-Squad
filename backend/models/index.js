@@ -57,3 +57,5 @@ db.sequelize.sync({ force: false })
   .catch(error => console.log(`${error}`))
 
 module.exports = db
+
+//XJuCYsB2xQKzY9jUJLY2

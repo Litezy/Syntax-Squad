@@ -15,5 +15,6 @@ module.exports = (sequelize, DataTypes) => {
         postcounts: { type: DataTypes.INTEGER,defaultValue: 0},
         answercounts: { type: DataTypes.INTEGER, defaultValue:0},
         verified: {type: DataTypes.STRING, defaultValue:'false'},
+        bio: {type: DataTypes.TEXT},
     })
 }

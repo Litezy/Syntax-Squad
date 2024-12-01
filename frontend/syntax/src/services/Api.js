@@ -13,7 +13,7 @@ export const non_auth_urls = {
     verify_email: user + '/email_verify',
 
     //Non auth password change
-    find_account: user + '/find_account',
+    find_account: user + '/find_account/:email', //requires an email
     otp_for_password: user + '/otp_for_password',
     resend_otp_for_password: user + '/resend_otp',
     change_non_auth_password: user + '/change_password',
@@ -48,7 +48,7 @@ export const auth_urls = {
 
    //Upvotes
    upvote: user + '/upvote_an_answer',
-   
+
     logout: user + '/logout',
     
 }

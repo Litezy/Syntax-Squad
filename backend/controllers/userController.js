@@ -14,6 +14,7 @@ const path = require('path');
 const Badge = require('../models').badges
 const BadgeNames = require('../models').badgenames
 const Newsletter = require('../models').newsletters
+const bcrypt = require('bcrypt')
 
 
 
@@ -43,13 +44,16 @@ exports.Signup = async (req, res) => {
                     "Password must be at least 6 characters long, contain at least one uppercase letter, one number, and one special character.",
             });
         }
+
+        const saltNum = 10
+        const hashedPassword = bcrypt.hash(password,saltNum)
         const findUsername = await User.findOne({ where: { username } })
         if (findUsername) return res.json({ status: 400, msg: 'Username exists, try another' })
         const finduser = await User.findOne({ where: { email: email } })
         if (finduser) return res.json({ status: 400, msg: 'This email already exists with us, Kindly login you account' })
         const otp = otpgenerator.generate(6, { specialChars: false, lowerCaseAlphabets: false, upperCaseAlphabets: false })
 
-        const user = await User.create({ firstname, gender, lastname, email, classgrade, username, password, code: otp, school })
+        const user = await User.create({ firstname, gender, lastname, email, classgrade, username, hashedPassword, code: otp, school })
         await SendMail({
             code: otp,
             mailTo: email,
@@ -108,7 +112,8 @@ exports.LoginAcc = async (req, res) => {
         if (!email || !password) return res.json({ status: 404, msg: "Incomplete request" })
         const user = await User.findOne({ where: { email } })
         if (!user) return res.json({ status: 400, msg: 'Account not found' })
-        if (user.password !== password) return res.json({ status: 404, msg: 'Invalid password' })
+        const isMatch = await bcrypt.compare(password, user.password)
+        if (!isMatch) return res.json({ status: 404, msg: 'Invalid password' })
         const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '48h' })
         user.status = 'online'
         return res.json({ status: 200, msg: 'Login successful', token })
@@ -246,7 +251,7 @@ exports.resendOtpForEmailVerification = async (req, res) => {
 
 exports.findAccount = async (req, res) => {
     try {
-        const { email } = req.body
+        const { email } = req.params
         if (!email) return res.json({ status: 400, msg: 'Email is missing' })
         const findemail = await User.findOne({ where: { email } })
         if (!findemail) return res.json({ status: 400, msg: 'Email not found' })
@@ -346,7 +351,10 @@ exports.ChangeUserPassword = async (req, res) => {
                     "Password must be at least 6 characters long, contain at least one uppercase letter, one number, and one special character.",
             });
         }
-        finduser.password = new_password
+
+        const saltrounds = 10
+        const hashedPassword = await bcrypt.hash(new_password, saltrounds)
+        finduser.password = hashedPassword
         await finduser.save()
         await Notify.create({
             type: 'Account Password Change',
@@ -356,7 +364,7 @@ exports.ChangeUserPassword = async (req, res) => {
         })
         await SendMail({
             mailTo: finduser.email,
-            subject: 'Password Change Successfull',
+            subject: 'Password Change Successful',
             username: finduser.firstname,
             message: 'Your request to change your account password was successful, login to your account with the new password',
             template: 'emailpass',
@@ -866,6 +874,18 @@ exports.emailSub = async (req, res) => {
 }
 
 
+
+exports.getAllTypesOfNotifications = async (req,res) =>{
+    try {
+        const notify = await Notify.findAll({
+            attributes:['type']
+        })
+        if(!notify) return res.json({status:400,msg:'No notifications found'})
+        return res.json({ status: 200, msg: 'fetch success', data: notify })
+    } catch (error) {
+        ServerError(res,error)
+    }
+}
 
 
 
