@@ -10,11 +10,19 @@ export default {
 
       fontFamily: {
         Grotesk:[ "Space Grotesk", 'sans-serif']
-      }
+      },
+      
+      colors: {
+        primary: 'var(--primary-color)',
+        background: 'var(--secondary-color)'  // Use the CSS variable
+      },
 
       
     },
   },
-  plugins: [],
+  plugins: [
+
+
+  ],
 }
 
