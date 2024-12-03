@@ -27,6 +27,7 @@ db.votes = require(`./voteModel`)(sequelize, DataTypes)
 db.badges = require(`./badgeModel`)(sequelize, DataTypes)
 db.badgenames =  require('./BadgeNames')(sequelize, DataTypes);
 db.newsletters =  require('./NewsletterModel')(sequelize, DataTypes);
+db.categories =  require('./categoriesModel')(sequelize, DataTypes);
 
 
 

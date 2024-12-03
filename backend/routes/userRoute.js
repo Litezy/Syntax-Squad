@@ -1,5 +1,6 @@
 const { userMiddleware } = require('../auth/UserAuth')
 const { Signup, Testmail, LoginAcc, GetUserProfile, logOutUser, VerifyEmail, ChangeProfileImage, ChangeUserPassword, VerifyPasswordChange, sendOtpForPasswordChange, CreateQuestion, getAllUsersQuestions, populateBadges, assignBadge, AnswerAQuestion, fetchAllQuestions, UpvoteAnAnswer, fetchAllUpvoteCountUsers, getSingleQuestionPost, getSingleUser, resendOTP, resendOtpForEmailVerification, findAccount, UpdateProfile, emailSub, getASingleAnswer, updateQuestion, updateAnswer, deleteAnswer, deleteQuestion, getAllTypesOfNotifications } = require('../controllers/userController')
+const { uploadCategories } = require('../utils/categoriesScript')
 
 const router = require('express').Router()
 
@@ -18,7 +19,8 @@ router.post('/change_password', ChangeUserPassword) //working
 router.post('/email_sub', emailSub) //working
 router.get('/get_notice', getAllTypesOfNotifications) //working
 
-
+//upload categories
+router.post('/upload_categories', uploadCategories)
 //Auth routes
 //profiles
 router.get('/profile', userMiddleware, GetUserProfile) //working
