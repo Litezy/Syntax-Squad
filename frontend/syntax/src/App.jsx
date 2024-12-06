@@ -20,8 +20,6 @@ function App() {
         <Route path="/Authentication" element={<Authentication/>}/>
         <Route path ="/Home" element={<Home/>}/>
 
-
-
       </Routes>
      </BrowserRouter>
     </div>

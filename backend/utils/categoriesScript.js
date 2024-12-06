@@ -1,8 +1,20 @@
-const sequelize = require('../models');
+const { sequelize } = require('../models');
+const { ServerError } = require('./utils');
 const categoryModel = require('../models').categories;
 
-exports.uploadCategories = async(req,res) => {
+exports.uploadCategories = async (req, res) => {
     try {
+
+        await sequelize.authenticate();
+        console.log('Database connected')
+
+
+        const existingCategories = await categoryModel.count();
+        if (existingCategories > 0) {
+            console.log('Categories already populated. Exiting script.');
+            return res.json({ status: 200, msg: 'Categories already populated. Exiting script.' })
+
+        }
         const categoryNames = [
             { name: 'Mathematics' },
             { name: 'English Language' },
@@ -57,7 +69,7 @@ exports.uploadCategories = async(req,res) => {
         // Fetch all categories in the database
         const fetchCategories = await categoryModel.findAll();
         const checkExistingNames = fetchCategories.map((category) => category.name);
-        
+
 
         // Find categories to remove
         const newNames = categoryNames.map((category) => category.name);
@@ -74,10 +86,11 @@ exports.uploadCategories = async(req,res) => {
         }
 
         console.log('Categories populated successfully');
-        process.exit(0);
+        return res.json({ status: 200, msg: 'categories uploaded successfully' })
     } catch (error) {
         console.error('Error in uploading categories to the database:', error);
-        process.exit(1);
+        ServerError(res,error)
+
     }
 }
 

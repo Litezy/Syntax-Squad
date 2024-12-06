@@ -1,26 +1,30 @@
 const { userMiddleware } = require('../auth/UserAuth')
-const { Signup, Testmail, LoginAcc, GetUserProfile, logOutUser, VerifyEmail, ChangeProfileImage, ChangeUserPassword, VerifyPasswordChange, sendOtpForPasswordChange, CreateQuestion, getAllUsersQuestions, populateBadges, assignBadge, AnswerAQuestion, fetchAllQuestions, UpvoteAnAnswer, fetchAllUpvoteCountUsers, getSingleQuestionPost, getSingleUser, resendOTP, resendOtpForEmailVerification, findAccount, UpdateProfile, emailSub, getASingleAnswer, updateQuestion, updateAnswer, deleteAnswer, deleteQuestion, getAllTypesOfNotifications } = require('../controllers/userController')
+const { Signup, Testmail, LoginAcc, GetUserProfile, logOutUser, VerifyEmail, ChangeProfileImage, ChangeUserPassword, VerifyPasswordChange, sendOtpForPasswordChange, CreateQuestion, getAllUsersQuestions, AnswerAQuestion, fetchAllQuestions, UpvoteAnAnswer, fetchAllUpvoteCountUsers, getSingleQuestionPost, getSingleUser, resendOTP, resendOtpForEmailVerification, findAccount, UpdateProfile, emailSub, getASingleAnswer, updateQuestion, updateAnswer, deleteAnswer, deleteQuestion, getAllTypesOfNotifications, getAllCategories, getAllUserNotifications, ContactUs, depopulateCategories, getQuestionTrends } = require('../controllers/userController')
+const { populateBadgeNames } = require('../utils/badgeScript')
 const { uploadCategories } = require('../utils/categoriesScript')
 
 const router = require('express').Router()
-
 //Non Auth routes
 router.post('/signup', Signup) //working
 router.post('/login', LoginAcc) //working
 router.post('/resend_otp', resendOTP) //working
 router.post('/email_verify', VerifyEmail) //working
+router.post('/contact_us', ContactUs) //working
 router.post('/resend_otp_for_email_verify', resendOtpForEmailVerification) //working
 
 //forgot password
-router.get(`/find_account/:email`, findAccount)
-router.post('/otp_for_password', sendOtpForPasswordChange)
+router.get(`/find_account/:email`, findAccount)//working
+router.post('/otp_for_password', sendOtpForPasswordChange)//working
 router.post('/change_password', ChangeUserPassword) //working
 
+//newsletter
 router.post('/email_sub', emailSub) //working
-router.get('/get_notice', getAllTypesOfNotifications) //working
+router.get('/get_notice_types', getAllTypesOfNotifications) //working
 
 //upload categories
-router.post('/upload_categories', uploadCategories)
+router.post('/upload_categories', uploadCategories)//working
+router.get('/fetch_all_categories',userMiddleware, getAllCategories)//working
+router.post('/populate_badges', populateBadgeNames)//working
 //Auth routes
 //profiles
 router.get('/profile', userMiddleware, GetUserProfile) //working
@@ -28,7 +32,8 @@ router.put('/update_profile', userMiddleware, UpdateProfile) //working
 router.get('/getsingle_user/:id', userMiddleware, getSingleUser) //working
 router.post('/upload_profileimg', userMiddleware, ChangeProfileImage) //working
 router.post('/verify_otp_for_password', userMiddleware, VerifyPasswordChange) //working
-router.post('/change_password', userMiddleware, ChangeUserPassword) //working
+router.post('/auth_change_password', userMiddleware, ChangeUserPassword) //working
+router.post('/get_user_notifications', userMiddleware, getAllUserNotifications) //working
 
 //Questions / Blogs routes
 router.post('/create_question', userMiddleware, CreateQuestion) //working
@@ -49,6 +54,9 @@ router.get('/get_single_answer', userMiddleware, getASingleAnswer) //working
 
 router.post('/logout', userMiddleware, logOutUser)//working
 //email test route
-router.post('/testmail', Testmail)
+router.post('/testmail', Testmail)//working
+
+router.post('/remove_cati',depopulateCategories)
+router.get('/trends',getQuestionTrends)
 
 module.exports = router

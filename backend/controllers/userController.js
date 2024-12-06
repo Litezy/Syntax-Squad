@@ -15,19 +15,29 @@ const Badge = require('../models').badges
 const BadgeNames = require('../models').badgenames
 const Newsletter = require('../models').newsletters
 const bcrypt = require('bcrypt')
+const Category = require('../models').categories
+const Contact = require('../models').contacts
+const sequelize = require('sequelize')
 
 
 
+exports.completeProfile = async (req, res) => {
+    try {
+        const { gender, classgrade, school } = req.body
+        if (!gender) return res.json({ status: 400, msg: 'gender is missing' })
+        if (!school) return res.json({ status: 400, msg: 'school name is missing' })
+        if (!classgrade) return res.json({ status: 400, msg: 'classgrade is missing' })
+    } catch (error) {
+
+    }
+}
 exports.Signup = async (req, res) => {
     try {
-        const { firstname, lastname, email, classgrade, school, username, confirm_password, password, gender } = req.body
+        const { firstname, lastname, email, username, confirm_password, password, } = req.body
         if (!firstname) return res.json({ status: 400, msg: 'Firstname is missing' })
         if (!lastname) return res.json({ status: 400, msg: 'Lastname is missing' })
         if (!username) return res.json({ status: 400, msg: 'Lastname is missing' })
-        if (!gender) return res.json({ status: 400, msg: 'gender is missing' })
         if (!email) return res.json({ status: 400, msg: 'email is missing' })
-        if (!school) return res.json({ status: 400, msg: 'school name is missing' })
-        if (!classgrade) return res.json({ status: 400, msg: 'classgrade is missing' })
         if (!confirm_password) return res.json({ status: 400, msg: 'confirm_password is missing' })
         if (!password) return res.json({ status: 400, msg: 'password is missing' })
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,14 +56,15 @@ exports.Signup = async (req, res) => {
         }
 
         const saltNum = 10
-        const hashedPassword = bcrypt.hash(password,saltNum)
+        const hashedPassword = await bcrypt.hash(password, saltNum)
+        // console.log("Hashed Password:", hashedPassword); // Debug
         const findUsername = await User.findOne({ where: { username } })
         if (findUsername) return res.json({ status: 400, msg: 'Username exists, try another' })
         const finduser = await User.findOne({ where: { email: email } })
         if (finduser) return res.json({ status: 400, msg: 'This email already exists with us, Kindly login you account' })
         const otp = otpgenerator.generate(6, { specialChars: false, lowerCaseAlphabets: false, upperCaseAlphabets: false })
 
-        const user = await User.create({ firstname, gender, lastname, email, classgrade, username, hashedPassword, code: otp, school })
+        const user = await User.create({ firstname, lastname, email, username, password: hashedPassword, code: otp })
         await SendMail({
             code: otp,
             mailTo: email,
@@ -325,7 +336,6 @@ exports.VerifyPasswordChange = async (req, res) => {
         if (!FindEmail) return res.json({ status: 404, msg: 'Account not found' })
         if (code !== FindEmail.code) return res.json({ status: 404, msg: 'Invalid code' })
         FindEmail.code = null
-        FindEmail.verified = 'true'
         await FindEmail.save()
         return res.json({ status: 200, msg: 'Code verified successfully' })
     } catch (error) {
@@ -430,6 +440,38 @@ const assignBadge = async (userid, badgeName) => {
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
+const AddCategoriesPosts = async (name, id) => {
+    try {
+        const category = await Category.findOne({ where: { name } });
+        if (!category) return { status: 400, msg: 'Category not found' };
+        // Initialize questionid as an empty array if it's undefined
+        let questionIds = category.questionid || [];
+        if (!Array.isArray(questionIds)) {
+            questionIds = JSON.parse(questionIds || '[]');
+        }
+        // console.log("Old questionids:", questionIds); // Logging old IDs
+        // Append the new id to the array
+        if (!questionIds.includes(id)) {
+            questionIds.push(id);
+        }
+        // console.log("New questionids:", questionIds); // Logging new IDs
+        // Update the category with the new questionid array
+        await Category.update(
+            { questionid: questionIds },
+            { where: { name } }
+        );
+
+        return { status: 200, msg: 'Category updated successfully' };
+    } catch (error) {
+        console.error("Error updating category:", error);
+        return { status: 500, msg: 'Server error', error };
+    }
+};
+
+
+
+
+
 exports.CreateQuestion = async (req, res) => {
     try {
         // Ensure this is populated via middleware
@@ -486,6 +528,8 @@ exports.CreateQuestion = async (req, res) => {
 
         await User.increment('postcounts', { where: { id: req.user } });
         const updatedUser = await User.findOne({ where: { id: req.user } });
+        await AddCategoriesPosts(category, newQuestionPost.id)
+        // console.log(newQuestionPost.id)
         await delay(1000);
         // 
         if (updatedUser.postcounts === 1) {
@@ -514,15 +558,22 @@ exports.CreateQuestion = async (req, res) => {
     }
 };
 
+exports.depopulateCategories = async (req, res) => {
+    try {
+        await Category.destroy({ where: {} });
+        return res.json({ status: 200, msg: 'Categories deleted successfully' });
+
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
 
 exports.updateQuestion = async (req, res) => {
     try {
-        const { category, content, id } = req.body;
+        const { content, id } = req.body;
         if (!id) return res.json({ status: 400, msg: 'Question ID is missing' })
         const question = await Question.findOne({ where: { id } });
         if (!question) return res.json({ status: 404, msg: 'Question not found' })
-        if (!category && !content) return res.json({ status: 400, msg: "Both fields can't be empty" })
-        if (category) question.category = category;
         if (content) question.content = content;
         question.edited = 'true'
         await question.save()
@@ -697,6 +748,82 @@ exports.UpvoteAnAnswer = async (req, res) => {
 }
 
 
+exports.getQuestionTrends = async (req, res) => {
+    try {
+        const topCategories = await Category.findAll({
+            order: [['postCount', 'DESC']],
+            limit: 5,
+        });
+        if (!topCategories.length || topCategories.length === 0) {
+            return res.json({ status: 404, msg: 'No categories found', data: [] });
+        }
+
+        const filteredCategories = topCategories.filter((item) => item !== null || [])
+        let allIds = []
+        let questionIds;
+        filteredCategories.map((category) => {
+            if (category.questionid) {
+                const allcatis = category.questionid
+                allIds.push(allcatis)
+                let result = allIds.flatMap(item => {
+                    try {
+                        return JSON.parse(item)
+                    } catch (error) {
+                        console.error("Error parsing item:", item, error);
+                        return [];
+                    }
+                })
+                questionIds = result
+            }
+        })
+
+        const questions = await Question.findAll({
+            where: { id: questionIds },
+            include: [
+                {
+                    model: User, as: 'userquestions',
+                    attributes: { exclude: Excludes }
+                },
+                {
+                    model: Answer, as: 'userans',
+                    include: [
+                        { model: User, as: 'useranswers' },
+                        {
+                            model: Vote, as: 'answer_votes',
+                            include: [
+                                {
+                                    model: User, as: 'uservotes',
+                                    attributes: { exclude: Excludes }
+                                }
+                            ]
+                        },
+                    ]
+                },
+            ]
+
+        })
+
+        const result = filteredCategories.map(category => {
+            const categoryQuestions = questions.filter(question =>
+                question.category === category.name
+            );
+            return {
+                category: {
+                    id: category.id,
+                    name: category.name,
+                    postCount: category.postCount,
+                    questions: categoryQuestions,
+                },
+
+            };
+        });
+        return res.json({ status: 200, msg: 'Question trends', data: result })
+    } catch (error) {
+        ServerError(res, error)
+    }
+
+}
+
 exports.fetchAllUpvoteCountUsers = async (req, res) => {
     try {
         const findvoters = await Vote.findAll({
@@ -734,7 +861,8 @@ exports.fetchAllQuestions = async (req, res) => {
                             model: Vote, as: "answer_votes",
                             include: [
                                 {
-                                    model: User, as: 'uservotes'
+                                    model: User, as: 'uservotes',
+                                    attributes: { exclude: Excludes }
                                 }
                             ]
                         }
@@ -768,7 +896,8 @@ exports.getSingleQuestionPost = async (req, res) => {
                             model: Vote, as: "answer_votes",
                             include: [
                                 {
-                                    model: User, as: 'uservotes'
+                                    model: User, as: 'uservotes',
+                                    attributes: { exclude: Excludes }
                                 }
                             ]
                         }
@@ -801,9 +930,8 @@ exports.getSingleUser = async (req, res) => {
 }
 exports.getAllUsersQuestions = async (req, res) => {
     try {
-        const questions = await Question.findAll({ where: { userid: req.user } })
-        if (!questions) return res.json({
-            status: 404, msg: "No posts found",
+        const questions = await Question.findAll({
+            where: { userid: req.user },
             include: [
                 {
                     model: Answer, as: 'userans',
@@ -816,7 +944,8 @@ exports.getAllUsersQuestions = async (req, res) => {
                             model: Vote, as: "answer_votes",
                             include: [
                                 {
-                                    model: User, as: 'uservotes'
+                                    model: User, as: 'uservotes',
+                                    attributes: { exclude: Excludes }
                                 }
                             ]
                         }
@@ -825,7 +954,9 @@ exports.getAllUsersQuestions = async (req, res) => {
             ],
             order: [['createdAt', 'DESC']],
         })
-
+        if (!questions) return res.json({
+            status: 404, msg: "No posts found",
+        })
         return res.json({ status: 200, msg: "fetch success", data: questions })
     } catch (error) {
         ServerError(res, error)
@@ -848,7 +979,8 @@ exports.getASingleAnswer = async (req, res) => {
                     model: Vote, as: "answer_votes",
                     include: [
                         {
-                            model: User, as: 'uservotes'
+                            model: User, as: 'uservotes',
+                            attributes: { exclude: Excludes }
                         }
                     ]
                 }
@@ -875,18 +1007,52 @@ exports.emailSub = async (req, res) => {
 
 
 
-exports.getAllTypesOfNotifications = async (req,res) =>{
+exports.getAllCategories = async (req, res) => {
     try {
-        const notify = await Notify.findAll({
-            attributes:['type']
+        const categories = await Category.findAll({
+            order: [['name', 'ASC']]
         })
-        if(!notify) return res.json({status:400,msg:'No notifications found'})
-        return res.json({ status: 200, msg: 'fetch success', data: notify })
+        if (!categories) return res.json({ status: 404, msg: 'Categories not found' })
+        return res.json({ status: 200, msg: 'fetch success', data: categories })
     } catch (error) {
-        ServerError(res,error)
+        ServerError(res, error)
     }
 }
 
+exports.getAllTypesOfNotifications = async (req, res) => {
+    try {
+        const notify = await Notify.findAll({
+            attributes: ['type']
+        })
+        if (!notify) return res.json({ status: 400, msg: 'No  notification types found for this user' })
+        return res.json({ status: 200, msg: 'fetch success', data: notify })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+exports.getAllUserNotifications = async (req, res) => {
+    try {
+        const findUser = await User.findOne({ where: { id: req.user } })
+        if (!findUser) return res.json({ status: 400, msg: 'User not authorized to this route' })
+        const notify = await Notify.findAll({ where: { userid: req.user } })
+        if (!notify) return res.json({ status: 400, msg: 'No notifications found' })
+        return res.json({ status: 200, msg: 'fetch success', data: notify })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
+
+
+exports.ContactUs = async (req, res) => {
+    try {
+        const { name, email, message } = req.body
+        if (!name || !email || !message) return res.json({ status: 400, msg: 'Incomplete request, All fields are required' })
+        const contact = await Contact.create({ name, email, message })
+        return res.json({ status: 200, msg: 'Message sent successfully', data: contact })
+    } catch (error) {
+        ServerError(res, error)
+    }
+}
 
 
 

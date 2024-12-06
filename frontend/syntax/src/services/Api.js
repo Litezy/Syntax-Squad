@@ -12,6 +12,9 @@ export const non_auth_urls = {
     login: user + '/login',
     verify_email: user + '/email_verify',
 
+    //categories
+    fetch_categories : user + '/fetch_all_categories',
+
     //Non auth password change
     find_account: user + '/find_account/:email', //requires an email
     otp_for_password: user + '/otp_for_password',

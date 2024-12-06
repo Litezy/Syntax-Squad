@@ -28,8 +28,7 @@ db.badges = require(`./badgeModel`)(sequelize, DataTypes)
 db.badgenames =  require('./BadgeNames')(sequelize, DataTypes);
 db.newsletters =  require('./NewsletterModel')(sequelize, DataTypes);
 db.categories =  require('./categoriesModel')(sequelize, DataTypes);
-
-
+db.contacts =  require('./contactModel')(sequelize, DataTypes);
 
 //One to Many relationships
 db.users.hasMany(db.questions, { foreignKey: "userid", as: 'userquestions' });
@@ -39,7 +38,6 @@ db.users.hasOne(db.votes, { foreignKey: "userid", as: 'uservotes' });
 db.answers.hasMany(db.votes, { foreignKey: "answerid", as: 'answer_votes' });
 db.users.hasMany(db.notifications, { foreignKey: 'userid', as: 'usernotify' })
 db.users.hasMany(db.badges, { foreignKey: 'userid', as: 'user_badges' })
-
 
 
 //One to One relationships
@@ -53,7 +51,8 @@ db.badges.belongsTo(db.users, { foreignKey: 'userid', as: 'user_badges' })
 
 
 
-db.sequelize.sync({ force: false })
+
+db.sequelize.sync({ force: false})
   .then(() => console.log(`Connection has been established successfully on ${isproduction ? 'online db' : 'local db'} `))
   .catch(error => console.log(`${error}`))
 
