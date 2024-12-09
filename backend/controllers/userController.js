@@ -747,6 +747,37 @@ exports.UpvoteAnAnswer = async (req, res) => {
     }
 }
 
+exports.UnvoteAnAnswer = async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) return res.json({ status: 400, msg: "Answer ID is required" });
+        const answer = await Answer.findOne({ where: { id } });
+        if (!answer) return res.json({ status: 404, msg: "Answer to unvote not found" });
+
+        const findQuestion = await Question.findOne({ where: { id: answer.questionId } });
+        if (!findQuestion) 
+            return res.json({ status: 404, msg: "Associated question not found" });
+
+        const UserwithAnswerPost = await User.findOne({ where: { id: answer.userid } });
+
+        // Check if the current user is authorized to unvote
+        if (UserwithAnswerPost.id === req.user) {
+            return res.json({  status: 403, msg: "You cannot unvote your own answer" });
+        }
+
+        // Decrement vote count for the answer
+        await Answer.decrement('votecounts', { where: { id } });
+        // Remove the specific vote
+        await Vote.destroy({
+            where: { userid: req.user, answerid: id }
+        });
+
+        return res.status(200).json({status: 200, msg: "Unvote successful",});
+    } catch (error) {
+        ServerError(res, error);
+    }
+};
+
 
 exports.getQuestionTrends = async (req, res) => {
     try {

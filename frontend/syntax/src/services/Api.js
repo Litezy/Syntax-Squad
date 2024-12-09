@@ -35,6 +35,9 @@ export const auth_urls = {
     send_otp: user + '/verify_otp_for_password',
     change_auth_password: user + '/change_password',
 
+    //Trending Categories
+    get_trendings : user + '/trends',
+
    //Questions routes
    post_question: user + '/create_question',
    edit_question_post: user + '/update_question',
@@ -51,8 +54,9 @@ export const auth_urls = {
 
    //Upvotes
    upvote: user + '/upvote_an_answer',
+   unvote: user + '/unvote_an_answer',
 
-    logout: user + '/logout',
+   logout: user + '/logout',
     
 }
 

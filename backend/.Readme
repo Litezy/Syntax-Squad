@@ -1,0 +1,49 @@
+🌟 **About EduConnect**
+EduConnect is a dynamic learning platform tailored for secondary school students. It creates an engaging community where students can connect, learn, and grow through meaningful interaction with educational content, peers, and mentors.
+
+🛠 Key Features
+🔑 **User Management**
+*Signup & Login*: Secure account creation with email verification for enhanced safety.
+Password Security: All passwords are hashed using industry-standard encryption for maximum security.
+Profile Badges: Achieve milestones and earn recognition through badges that showcase your progress and engagement.
+
+📚 Interactive Learning
+*Post Questions*: Share queries across various categories to spark discussions and knowledge-sharing.
+*Answer Questions*: Engage with posts by providing answers as comments under questions.
+*Upvotes*: Reward helpful answers with upvotes, encouraging quality contributions.
+
+
+🤝 Community Engagement
+*Collaborative Learning*: Connect with peers and learn collaboratively by exploring trending educational topics.
+*Badging System*: Stay motivated with badges awarded for frequent posting, upvoted answers, and consistent activity.
+
+📊 Analytics & Insights
+*Category Trends*: Stay updated on trending topics and categories based on user interactions.
+
+🔧 Tech Stack
+*Backend*: Powered by Node.js and Express.js for efficient API management.
+*Database*: Data management through Sequelize ORM with a robust MySQL database.
+*Authentication*: Features secure authentication with hashed passwords and email OTP verification.
+*Deployment*: Hosted on scalable and secure Hosting infrastructure.
+
+⚙️ Installation
+*Clone the repository*:
+git clone https://github.com/Litezy/Syntax-Squad.git
+*dir*: cd to backend/
+
+**Install dependencies**:
+*npm install*
+*Set up the environment*: Create a .env file with the following variables:*available upon request*
+*DATABASE_URL*: *available upon request*.
+*JWT_SECRET*: Secret key for authentication tokens.
+
+
+*Start the development server*:
+*npm start*
+
+
+🔌 API Endpoints
+  **Can find this in the Postman Doc**
+  *Link*
+
+EduConnect is more than a platform—it's a community empowering students to explore, share, and grow academically. Together, we’re building a brighter future! 🌍✨

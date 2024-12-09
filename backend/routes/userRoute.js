@@ -1,5 +1,5 @@
 const { userMiddleware } = require('../auth/UserAuth')
-const { Signup, Testmail, LoginAcc, GetUserProfile, logOutUser, VerifyEmail, ChangeProfileImage, ChangeUserPassword, VerifyPasswordChange, sendOtpForPasswordChange, CreateQuestion, getAllUsersQuestions, AnswerAQuestion, fetchAllQuestions, UpvoteAnAnswer, fetchAllUpvoteCountUsers, getSingleQuestionPost, getSingleUser, resendOTP, resendOtpForEmailVerification, findAccount, UpdateProfile, emailSub, getASingleAnswer, updateQuestion, updateAnswer, deleteAnswer, deleteQuestion, getAllTypesOfNotifications, getAllCategories, getAllUserNotifications, ContactUs, depopulateCategories, getQuestionTrends } = require('../controllers/userController')
+const { Signup, Testmail, LoginAcc, GetUserProfile, logOutUser, VerifyEmail, ChangeProfileImage, ChangeUserPassword, VerifyPasswordChange, sendOtpForPasswordChange, CreateQuestion, getAllUsersQuestions, AnswerAQuestion, fetchAllQuestions, UpvoteAnAnswer, fetchAllUpvoteCountUsers, getSingleQuestionPost, getSingleUser, resendOTP, resendOtpForEmailVerification, findAccount, UpdateProfile, emailSub, getASingleAnswer, updateQuestion, updateAnswer, deleteAnswer, deleteQuestion, getAllTypesOfNotifications, getAllCategories, getAllUserNotifications, ContactUs, depopulateCategories, getQuestionTrends, UnvoteAnAnswer } = require('../controllers/userController')
 const { populateBadgeNames } = require('../utils/badgeScript')
 const { uploadCategories } = require('../utils/categoriesScript')
 
@@ -19,9 +19,11 @@ router.post('/change_password', ChangeUserPassword) //working
 
 //newsletter
 router.post('/email_sub', emailSub) //working
+
+//handle notifcation types
 router.get('/get_notice_types', getAllTypesOfNotifications) //working
 
-//upload categories
+//upload and fetch categories/badges
 router.post('/upload_categories', uploadCategories)//working
 router.get('/fetch_all_categories',userMiddleware, getAllCategories)//working
 router.post('/populate_badges', populateBadgeNames)//working
@@ -45,6 +47,7 @@ router.post('/update_answer', userMiddleware, updateAnswer) //working
 router.delete('/delete_answer/:id', userMiddleware, deleteAnswer) //working
 router.get('/fetch_all_questions', userMiddleware, fetchAllQuestions) //working
 router.post('/upvote_an_answer', userMiddleware, UpvoteAnAnswer) //working
+router.post('/unvote_an_answer', userMiddleware, UnvoteAnAnswer) //working
 router.get('/get_users_questions', userMiddleware, getAllUsersQuestions) //working
 router.get('/get_upvote_voters', userMiddleware, fetchAllUpvoteCountUsers) //working
 router.get('/get_one_user_questions', userMiddleware, getAllUsersQuestions) //working
@@ -56,7 +59,7 @@ router.post('/logout', userMiddleware, logOutUser)//working
 //email test route
 router.post('/testmail', Testmail)//working
 
-router.post('/remove_cati',depopulateCategories)
+router.post('/remove_cati',depopulateCategories)//for admin only
 router.get('/trends',getQuestionTrends)
 
 module.exports = router
