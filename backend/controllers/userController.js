@@ -755,14 +755,14 @@ exports.UnvoteAnAnswer = async (req, res) => {
         if (!answer) return res.json({ status: 404, msg: "Answer to unvote not found" });
 
         const findQuestion = await Question.findOne({ where: { id: answer.questionId } });
-        if (!findQuestion) 
+        if (!findQuestion)
             return res.json({ status: 404, msg: "Associated question not found" });
 
         const UserwithAnswerPost = await User.findOne({ where: { id: answer.userid } });
 
         // Check if the current user is authorized to unvote
         if (UserwithAnswerPost.id === req.user) {
-            return res.json({  status: 403, msg: "You cannot unvote your own answer" });
+            return res.json({ status: 403, msg: "You cannot unvote your own answer" });
         }
 
         // Decrement vote count for the answer
@@ -772,7 +772,7 @@ exports.UnvoteAnAnswer = async (req, res) => {
             where: { userid: req.user, answerid: id }
         });
 
-        return res.status(200).json({status: 200, msg: "Unvote successful",});
+        return res.status(200).json({ status: 200, msg: "Unvote successful", });
     } catch (error) {
         ServerError(res, error);
     }
@@ -1118,17 +1118,14 @@ exports.ContactUs = async (req, res) => {
 
 exports.Testmail = async (req, res) => {
     try {
+        const { email } = req.body
+        if (!email) return res.json({ status: 400, msg: 'Email is missing' })
 
-        const otp = otpgenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false })
         await SendMail({
-            code: otp,
-            mailTo: 'liteb237@gmail.com',
-            subject: 'Account Verification Code',
-            username: `Bethel`,
-            message: 'Copy and paste your account verification code below',
-            template: 'verification',
-            fullname: `Bethel Nnadi`,
-            email: 'liteb237@gmail.com',
+            mailTo: email,
+            subject: 'Email Route Testing',
+            template: 'test',
+            email,
             date: moment().format('DD MMMM YYYY hh:mm A')
         })
         return res.json({ status: 200, msg: 'Test email sent successfully' })

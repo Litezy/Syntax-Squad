@@ -33,10 +33,22 @@ git clone https://github.com/Litezy/Syntax-Squad.git
 
 **Install dependencies**:
 *npm install*
-*Set up the environment*: Create a .env file with the following variables:*available upon request*
-*DATABASE_URL*: *available upon request*.
-*JWT_SECRET*: Secret key for authentication tokens.
+*Set up the environment*: Create a .env file with the following variables:
+PORT = "5003"
+DB_NAME = *available upon request*
+DB_USER = "pinerock_educonnectdb"
+DB_HOST = "ls11.host-ww.net"
+DB_PASSWORD =*available upon request*
+DB_DIALECT= "mysql"
+JWT_SECRET ='educonnectonetwot6462823'
+NODE_ENV = 'production'
+MAIL_HOST = ls11.host-ww.net
+MAIL_PASSWORD = *available upon request*
+MAIL_PORT = *available upon request*
+MAIL_SECURE = true
+MAIL_USER = educonnect@pinerockcreditunion.com
 
+//NB: Typical of production environment variables.
 
 *Start the development server*:
 *npm start*
